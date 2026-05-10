@@ -143,19 +143,20 @@ export default function FileUpload({ onUploadComplete, onError }: FileUploadProp
   return (
     <div className="sidebar-header">
       <h2 className="sidebar-title">Upload Document</h2>
-      <div
+      <label
         className={`upload-zone ${dragging ? "dragging" : ""} ${uploading ? "uploading" : ""}`}
         id="upload-zone"
+        htmlFor="file-input"
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        onClick={() => !uploading && inputRef.current?.click()}
         role="button"
         tabIndex={0}
         aria-label="Upload a document"
+        style={{ display: "block", cursor: uploading ? "default" : "pointer" }}
       >
         <input
           ref={inputRef}
@@ -164,6 +165,7 @@ export default function FileUpload({ onUploadComplete, onError }: FileUploadProp
           accept=".pdf,.txt"
           onChange={handleChange}
           id="file-input"
+          disabled={uploading}
         />
 
         {!uploading ? (
