@@ -1,66 +1,98 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useCallback, useState } from "react";
+import Header from "@/components/Header";
+import FileUpload from "@/components/FileUpload";
+import DocumentSidebar from "@/components/DocumentSidebar";
+import ChatInterface from "@/components/ChatInterface";
+
+export interface DocumentInfo {
+  fileName: string;
+  collectionName: string;
+  chunkCount: number;
+  pageCount: number;
+  uploadedAt: number;
+}
 
 export default function Home() {
+  const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  const [activeDocument, setActiveDocument] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleUploadComplete = useCallback(
+    (doc: {
+      fileName: string;
+      collectionName: string;
+      chunkCount: number;
+      pageCount: number;
+    }) => {
+      const newDoc: DocumentInfo = {
+        ...doc,
+        uploadedAt: Date.now(),
+      };
+      setDocuments((prev) => [newDoc, ...prev]);
+      setActiveDocument(doc.collectionName);
+    },
+    []
+  );
+
+  const handleDeleteDocument = useCallback(
+    async (collectionName: string) => {
+      try {
+        await fetch("/api/collections", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ collectionName }),
+        });
+
+        setDocuments((prev) =>
+          prev.filter((d) => d.collectionName !== collectionName)
+        );
+
+        if (activeDocument === collectionName) {
+          setActiveDocument(null);
+        }
+      } catch {
+        setError("Failed to delete document");
+      }
+    },
+    [activeDocument]
+  );
+
+  const handleError = useCallback((message: string) => {
+    setError(message);
+    setTimeout(() => setError(null), 5000);
+  }, []);
+
+  const activeDoc = documents.find((d) => d.collectionName === activeDocument);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="app-container" id="app-container">
+      <Header />
+      <div className="main-content">
+        <aside className="sidebar" id="sidebar">
+          <FileUpload
+            onUploadComplete={handleUploadComplete}
+            onError={handleError}
+          />
+          <DocumentSidebar
+            documents={documents}
+            activeDocument={activeDocument}
+            onSelectDocument={setActiveDocument}
+            onDeleteDocument={handleDeleteDocument}
+          />
+        </aside>
+        <ChatInterface
+          collectionName={activeDocument}
+          documentName={activeDoc?.fileName || null}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+      </div>
+
+      {error && (
+        <div className="error-toast" id="error-toast" role="alert">
+          ⚠️ {error}
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      )}
     </div>
   );
 }
