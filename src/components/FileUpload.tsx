@@ -197,7 +197,7 @@ export default function FileUpload({ onUploadComplete, onError }: FileUploadProp
             </div>
           </div>
         )}
-      </div>
+      </label>
     </div>
   );
 }
